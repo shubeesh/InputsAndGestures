@@ -1,497 +1,332 @@
-package com.example.statesandlistsapp
+package com.example.inputsassignment
 
 import android.os.Bundle
-import android.os.Parcelable
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import kotlinx.parcelize.Parcelize
 
-// 1) Data Model
-@Parcelize
-data class ShoppingItem(
-    val id: Int,
-    val name: String,
-    val quantity: Int,
-    val category: String,
-    val purchased: Boolean = false,
-    val favorite: Boolean = false
-) : Parcelable
+/**
+ * Single-file starter for the "Inputs Only (No Gestures)" assignment.
+ *
+ * Contents:
+ *  - MainActivity entry point
+ *  - ContactFormScreen composable (UI)
+ *  - Contact data class
+ *  - Pure validation functions (TODOs)
+ *
+ * Students implement the TODOs to:
+ *  - Add validation rules
+ *  - Wire IME Next/Done and focus movement
+ *  - Revalidate fields while correcting errors
+ *  - Validate & submit (show Snackbar/Dialog), and Clear
+ */
 
-
-
-private val categoryColors = mapOf(
-    "Produce" to Color(0xFF81C784),
-    "Dairy" to Color(0xFFFFF59D),
-    "Meat" to Color(0xFFFFAB91),
-    "Bakery" to Color(0xFFB39DDB),
-    "Other" to Color(0xFF90CAF9)
-)
-
+// -----------------------------
+// Entry point
+// -----------------------------
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
                 Surface {
-                    ShoppingListScreen()
+                    ContactFormScreen()
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+// -----------------------------
+// UI
+// -----------------------------
 @Composable
-fun ShoppingListScreen() {
+fun ContactFormScreen(modifier: Modifier = Modifier) {
+    // region --- State ---
+    var name by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var phone by rememberSaveable { mutableStateOf("") }
+    var agreed by rememberSaveable { mutableStateOf(false) }
 
-    val items = remember { mutableStateListOf<ShoppingItem>() }
+    var nameError by rememberSaveable { mutableStateOf<String?>(null) }
+    var emailError by rememberSaveable { mutableStateOf<String?>(null) }
+    var phoneError by rememberSaveable { mutableStateOf<String?>(null) }
+    var termsError by rememberSaveable { mutableStateOf<String?>(null) }
 
-    // Inputs (saved across configuration changes)
-    var inputName by rememberSaveable { mutableStateOf("") }
-    var inputQuantity by rememberSaveable { mutableStateOf("1") }
-    var selectedCategory by rememberSaveable { mutableStateOf("Produce") }
-    var nextId by rememberSaveable { mutableStateOf(1) }
-
-    // Filtering/searching/sort
-    var filterMode by rememberSaveable { mutableStateOf("all") } // "all", "purchased", "to_buy"
-    var sortMode by rememberSaveable { mutableStateOf("default") } // "default", "name", "category", "quantity"
-    var searchQuery by rememberSaveable { mutableStateOf("") }
-
-    val scaffoldState = rememberScaffoldState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
+    val focus = LocalFocusManager.current
 
-    var recentlyDeleted: ShoppingItem? by remember { mutableStateOf(null) }
+    // Focus requesters for IME "Next" chain
+    val nameFocus = remember { FocusRequester() }
+    val emailFocus = remember { FocusRequester() }
+    val phoneFocus = remember { FocusRequester() }
+    // endregion --- State ---
+
+    // region --- Helpers ---
+    fun revalidateIfShowingError() {
+
+
+        // TODO(Student): If a field currently has an error, re-run its validator and clear once valid.
+        // For example:
+        if (nameError != null) nameError = validateName(name)
+        if (emailError != null) emailError = validateEmail(email)
+        if (phoneError != null) phoneError = validatePhone(phone)
+        if (termsError != null) termsError = validateTerms(agreed)
+    }
+
+    fun validateAll(): Boolean {
+        // TODO(Student): Run all validators and set error states.
+        // Example:
+        nameError = validateName(name)
+        emailError = validateEmail(email)
+        phoneError = validatePhone(phone)
+        termsError = validateTerms(agreed)
+        // Return true only if all are valid (all errors == null).
+        return listOf(nameError, emailError, phoneError, termsError).all { it == null }
+    }
+
+    fun clearAll() {
+        name = ""; email = ""; phone = ""; agreed = false
+        nameError = null; emailError = null; phoneError = null; termsError = null
+    }
+
+    fun submit() {
+        // TODO(Student):
+        if (!validateAll()) {
+
+            nameFocus.requestFocus()
+            emailFocus.requestFocus()
+            phoneFocus.requestFocus()
+
+        } else {
+            focus.clearFocus();
+        }
+
+
+
+    }
+    // endregion --- Helpers ---
 
     Scaffold(
-        scaffoldState = scaffoldState,
-        topBar = {
-            CenterAlignedTopAppBar(title = { Text("Shopping List") })
-        },
-        floatingActionButton = {
-            SortingAndActionsFab(
-                onClearPurchased = {
-                    val removed = items.filter { it.purchased }
-                    if (removed.isNotEmpty()) {
-                        items.removeAll(removed)
-                    }
-                },
-                onReset = {
-                    items.clear()
-                    nextId = 1
-                },
-                onSortBy = { mode ->
-                    sortMode = mode
-                }
-            )
-        },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { innerPadding ->
+    ) { padding ->
         Column(
-            Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier = modifier
+                .padding(padding)
                 .padding(16.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 4) Input Section
-            Card(
+            // Name
+            OutlinedTextField(
+                value = name,
+                onValueChange = {
+                    name = it
+                    // TODO(Student): If nameError is showing, revalidate just this field now.
+                    nameError = validateName(name)
+                    revalidateIfShowingError()
+                },
+                label = { Text("Name") },
+                isError = nameError != null,
+                supportingText = {
+                    if (nameError != null) Text(
+                        nameError!!,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = {
+                        emailFocus.requestFocus()
+                        // TODO(Student): Move focus to Email field using emailFocus.requestFocus()
+                    }
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp)
-            ) {
-                Column(Modifier.padding(12.dp)) {
-                    OutlinedTextField(
-                        value = inputName,
-                        onValueChange = { inputName = it },
-                        label = { Text("Item name") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = inputQuantity,
-                        onValueChange = { new ->
-                            // allow only numbers
-                            if (new.all { it.isDigit() }) {
-                                inputQuantity = new
-                            }
-                        },
-                        label = { Text("Quantity") },
-                        modifier = Modifier.width(120.dp)
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    CategorySelector(
-                        selected = selectedCategory,
-                        onSelectionChange = { selectedCategory = it }
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.End,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Button(onClick = {
-                            val name = inputName.trim()
-                            val quantity = inputQuantity.toIntOrNull() ?: 1
-                            if (name.isNotEmpty()) {
-                                val newItem = ShoppingItem(
-                                    id = nextId,
-                                    name = name,
-                                    quantity = quantity,
-                                    category = selectedCategory
-                                )
-                                items.add(newItem)
-                                nextId++
-                                inputName = ""
-                                inputQuantity = "1"
-                            } else {
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Please enter an item name")
-                                }
-                            }
-                        }) {
-                            Text("Add item")
-                        }
-                    }
-                }
-            }
+                    .focusRequester(nameFocus)
+                    .semantics { contentDescription = "Name field" }
+            )
 
+            // Email
+            OutlinedTextField(
+                value = email,
+                onValueChange = {
+                    email = it
+                    // TODO(Student): If emailError is showing, revalidate this field only.
+                    emailError = validateEmail(email)
+                    revalidateIfShowingError()
+                },
+                label = { Text("Email") },
+                isError = emailError != null,
+                supportingText = {
+                    if (emailError != null) Text(
+                        emailError!!,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = {
+                        phoneFocus.requestFocus()
+                        // TODO(Student): Move focus to Phone field using phoneFocus.requestFocus()
+                    }
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(emailFocus)
+                    .semantics { contentDescription = "Email field" }
+            )
+
+            // Phone
+            OutlinedTextField(
+                value = phone,
+                onValueChange = {
+                    phone = it
+                    // TODO(Student): If phoneError is showing, revalidate this field only.
+                    phoneError = validatePhone(phone)
+                    revalidateIfShowingError()
+                },
+                label = { Text("Phone") },
+                isError = phoneError != null,
+                supportingText = {
+                    if (phoneError != null) Text(
+                        phoneError!!,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Phone,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        submit()
+                        // TODO(Student): Attempt submit() when user presses Done
+                    }
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(phoneFocus)
+                    .semantics { contentDescription = "Phone field" }
+            )
+
+            // Agree to Terms
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.semantics { contentDescription = "Agree to terms" }
             ) {
-                FilterChipGroup(
-                    filterMode = filterMode,
-                    onFilterChange = { filterMode = it }
+                Checkbox(
+                    checked = agreed,
+                    onCheckedChange = {
+                        agreed = it
+                        // TODO(Student): If termsError is showing, revalidate the terms.
+                        termsError = validateTerms(agreed)
+                        revalidateIfShowingError()
+                    }
                 )
-                Spacer(Modifier.width(12.dp))
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    label = { Text("Search") },
-                    modifier = Modifier.weight(1f)
-                )
+                Text("I agree to the terms and conditions")
             }
-
-            Spacer(Modifier.height(12.dp))
-
-            StatisticsCard(items = items)
-
-            Spacer(Modifier.height(12.dp))
-
-            val filtered = remember(items, filterMode, searchQuery) {
-                items.filter { item ->
-                    val passesFilter = when (filterMode) {
-                        "purchased" -> item.purchased
-                        "to_buy" -> !item.purchased
-                        else -> true
-                    }
-                    val matchesSearch = item.name.contains(searchQuery, ignoreCase = true)
-                    passesFilter && matchesSearch
-                }
-            }
-
-            val grouped = remember(filtered, sortMode) {
-                val groupedRaw = filtered.groupBy { it.category }
-                val categories = groupedRaw.keys.sorted()
-                val sortedMap = categories.associateWith { catItems ->
-                    when (sortMode) {
-                        "name" -> groupedRaw[catItems]!!.sortedBy { it.name.lowercase() }
-                        "quantity" -> groupedRaw[catItems]!!.sortedByDescending { it.quantity }
-                        "category" -> groupedRaw[catItems]!!.sortedBy { it.category }
-                        else -> groupedRaw[catItems]!!.sortedBy { it.id }
-                    }
-                }
-                sortedMap
-            }
-
-
-            if (items.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No items yet — add your first item!")
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .animateContentSize()
-                ) {
-                    grouped.forEach { (category, catItems) ->
-                        stickyHeader {
-                            Surface(
-                                tonalElevation = 4.dp,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(8.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(12.dp)
-                                            .clip(CircleShape)
-                                            .background(categoryColors[category] ?: Color.Gray)
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(category, style = MaterialTheme.typography.titleMedium)
-                                    Spacer(Modifier.weight(1f))
-                                    Text("${catItems.size}", style = MaterialTheme.typography.bodySmall)
-                                }
-                            }
-                        }
-
-                        items(catItems, key = { it.id }) { item ->
-                            AnimatedVisibility(
-                                visible = true,
-                                enter = fadeIn(),
-                                exit = fadeOut()
-                            ) {
-                                ShoppingItemCard(
-                                    item = item,
-                                    onTogglePurchased = {
-                                        val idx = items.indexOfFirst { it.id == item.id }
-                                        if (idx >= 0) {
-                                            items[idx] = items[idx].copy(purchased = !items[idx].purchased)
-                                        }
-                                    },
-                                    onDelete = {
-                                        // remove and show undo snackbar
-                                        recentlyDeleted = item
-                                        items.remove(item)
-                                        coroutineScope.launch {
-                                            val result = snackbarHostState.showSnackbar(
-                                                message = "Deleted ${item.name}",
-                                                actionLabel = "Undo"
-                                            )
-                                            if (result == SnackbarResult.ActionPerformed) {
-                                                recentlyDeleted?.let { deleted ->
-                                                    items.add(deleted)
-                                                    recentlyDeleted = null
-                                                }
-                                            } else {
-                                                recentlyDeleted = null
-                                            }
-                                        }
-                                    },
-                                    onToggleFavorite = {
-                                        val idx = items.indexOfFirst { it.id == item.id }
-                                        if (idx >= 0) {
-                                            items[idx] = items[idx].copy(favorite = !items[idx].favorite)
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// Filter Chip Row
-@Composable
-fun FilterChipGroup(
-    filterMode: String,
-    onFilterChange: (String) -> Unit
-) {
-    Row {
-        FilterChip(
-            selected = filterMode == "all",
-            onClick = { onFilterChange("all") },
-            label = { Text("All") }
-        )
-        Spacer(Modifier.width(8.dp))
-        FilterChip(
-            selected = filterMode == "to_buy",
-            onClick = { onFilterChange("to_buy") },
-            label = { Text("To Buy") }
-        )
-        Spacer(Modifier.width(8.dp))
-        FilterChip(
-            selected = filterMode == "purchased",
-            onClick = { onFilterChange("purchased") },
-            label = { Text("Purchased") }
-        )
-    }
-}
-
-// 5) Statistics Card
-@Composable
-fun StatisticsCard(items: List<ShoppingItem>) {
-    val total = items.size
-    val purchased = items.count { it.purchased }
-    val remaining = total - purchased
-    val categories = items.map { it.category }.distinct().size
-    val progress = if (total == 0) 0f else (purchased.toFloat() / total.toFloat())
-
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column {
-                    Text("Total items: $total", style = MaterialTheme.typography.bodyLarge)
-                    Text("Purchased: $purchased • Remaining: $remaining", style = MaterialTheme.typography.bodyMedium)
-                    Text("Categories: $categories", style = MaterialTheme.typography.bodyMedium)
-                }
-                Spacer(Modifier.weight(1f))
-                Text("${(progress * 100).toInt()}%", style = MaterialTheme.typography.titleMedium)
-            }
-            Spacer(Modifier.height(8.dp))
-            LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth())
-        }
-    }
-}
-
-// 8) Item Card Component
-@Composable
-fun ShoppingItemCard(
-    item: ShoppingItem,
-    onTogglePurchased: () -> Unit,
-    onDelete: () -> Unit,
-    onToggleFavorite: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-            .animateContentSize(),
-        totalElevation = 2.dp
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(12.dp)
-        ) {
-            Checkbox(
-                checked = item.purchased,
-                onCheckedChange = { onTogglePurchased() }
-            )
-            Spacer(Modifier.width(8.dp))
-            Column(modifier = Modifier.weight(1f)) {
+            if (termsError != null) {
                 Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    textDecoration = if (item.purchased) TextDecoration.LineThrough else TextDecoration.None
-                )
-                Spacer(Modifier.height(2.dp))
-                Text("Qty: ${item.quantity} • ${item.category}", style = MaterialTheme.typography.bodySmall)
-            }
-            IconButton(onClick = onToggleFavorite) {
-                Icon(
-                    imageVector = Icons.Default.Favorite,
-                    contentDescription = "Favorite",
-                    tint = if (item.favorite) Color.Red else Color.Gray
+                    text = termsError!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
-            IconButton(onClick = onDelete) {
-                Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete")
+
+            // Actions
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = {
+                        submit()
+                        // TODO(Student): Call submit()
+                    },
+                    modifier = Modifier.semantics { contentDescription = "Submit" }
+                ) { Text("Submit") }
+
+                OutlinedButton(
+                    onClick = {
+                        clearAll()
+
+                        // TODO(Student): Optionally show a light confirmation (e.g., Snackbar("Cleared"))
+                    },
+                    modifier = Modifier.semantics { contentDescription = "Clear" }
+                ) { Text("Clear") }
             }
+
+            // Optional: show a non-interactive summary (no gestures) after submit.
+            // TODO(Student): Display a simple Text/Card with the last submitted contact, if you like.
         }
     }
 }
 
-// 9) Category Helper
-@Composable
-fun CategorySelector(
-    selected: String,
-    onSelectionChange: (String) -> Unit
-) {
-    val categories = listOf("Produce", "Dairy", "Meat", "Bakery", "Other")
-    Row {
-        categories.forEach { cat ->
-            AssistChip(
-                onClick = { onSelectionChange(cat) },
-                label = { Text(cat) },
-                selected = selected == cat,
-                modifier = Modifier.padding(end = 8.dp)
-            )
-        }
-    }
+// -----------------------------
+// Data
+// -----------------------------
+data class Contact(
+    val name: String,
+    val email: String,
+    val phone: String,
+    val agreed: Boolean
+)
+
+// -----------------------------
+// Validation (pure functions)
+// -----------------------------
+
+/**
+ * Validators return null when valid, or a non-empty error message when invalid.
+ * NOTE: These stubs currently return null so the app compiles; replace with real checks.
+ */
+
+fun validateName(name: String): String? {
+    val trimmed = name.trim()
+    return if (trimmed.length >= 2) null else "Name must be at least 2 characters"
 }
 
-// Floating action button with sorting and actions
-@Composable
-fun SortingAndActionsFab(
-    onClearPurchased: () -> Unit,
-    onReset: () -> Unit,
-    onSortBy: (String) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        ExtendedFloatingActionButton(
-            text = { Text("Actions") },
-            icon = { Icon(Icons.Default.MoreVert, contentDescription = "Actions") },
-            onClick = { expanded = true }
-        )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text("Clear purchased") },
-                onClick = {
-                    onClearPurchased()
-                    expanded = false
-                }
-            )
-            DropdownMenuItem(
-                text = { Text("Reset list") },
-                onClick = {
-                    onReset()
-                    expanded = false
-                }
-            )
-            DropdownMenuItem(
-                text = { Text("Sort by name") },
-                onClick = {
-                    onSortBy("name")
-                    expanded = false
-                }
-            )
-            DropdownMenuItem(
-                text = { Text("Sort by quantity") },
-                onClick = {
-                    onSortBy("quantity")
-                    expanded = false
-                }
-            )
-            DropdownMenuItem(
-                text = { Text("Sort by category") },
-                onClick = {
-                    onSortBy("category")
-                    expanded = false
-                }
-            )
-            DropdownMenuItem(
-                text = { Text("Default sort") },
-                onClick = {
-                    onSortBy("default")
-                    expanded = false
-                }
-            )
-        }
-    }
+fun validateEmail(email: String): String? {
+    val at = email.indexOf('@')
+    if (at <= 0) return "Email must contain '@' and a '.' after it"
+    val dotAfter = email.indexOf('.', at + 1)
+    return if (dotAfter > at) null else "Email must contain '@' and a '.' after it"
+}
+
+fun validatePhone(phone: String): String? {
+    val digits = phone.filter(Char::isDigit)
+    return if (digits.length in 10..15) null else "Phone number must contain 10 to 15 digits"
+}
+
+fun validateTerms(agreed: Boolean): String? {
+    return if (agreed) null else "You must agree to the terms"
 }
